@@ -1,0 +1,14 @@
+fastapi==0.110.0
+uvicorn==0.27.1
+gunicorn>=21.2.0
+python-dotenv==1.0.1      
+python-multipart==0.0.9
+
+opencv-python==4.6.0.66
+numpy==1.26.4
+pillow==10.2.0
+
+paddleocr==2.7.3
+paddlepaddle==2.6.2
+
+# regex==2023.12.25        # Optional: Keep only if you use 'import regex' 

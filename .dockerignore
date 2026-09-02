@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local uploads and outputs — NOT part of the image
+uploads/
+outputs/
+
+# Dev / test files
+*.ipynb
+profile_ocr.py
+benchmark.py
+bench_*.txt
+reproduce_*.py
+test_*.py
+
+# Git
+.git/
+.github/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Docs / frontend (served separately)
+ocr-frontend/
+README.md
+
+# Env files — never bake secrets into the image
+.env
+.env.local
+.env.*

@@ -1,0 +1,34 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment / Secrets
+.env
+.env.local
+
+# Project Specific (Transient Data)
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
+*.log
+
+# Frontend (ocr-frontend)
+ocr-frontend/node_modules/
+ocr-frontend/build/
+ocr-frontend/dist/
+ocr-frontend/.env.local
+ocr-frontend/npm-debug.log*
+
+# OS / IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
