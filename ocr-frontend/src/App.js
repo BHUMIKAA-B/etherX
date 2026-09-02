@@ -2,9 +2,9 @@ import React, { useState, useRef } from 'react';
 import './App.css';
 import logo from './assets/logo.png';
 
-const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+const API_BASE = process.env.REACT_APP_API_URL || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? "http://127.0.0.1:8000"
-  : "https://etherxvision-backend-production.up.railway.app";
+  : "https://etherxvision-backend-production.up.railway.app");
 
 // Updated steps to match your Internship Project flow
 const STEPS = ["UPLOAD", "PREPROCESS", "ANALYSIS", "EXTRACTION"];
@@ -153,7 +153,7 @@ function App() {
                 ))}
               </div>
               <div className="spinner-loader"></div>
-              <button className="btn-scan" style={{ marginTop: '20px' }} onClick={handleCancel}>CANCEL</button>
+              <button className="btn-cancel" style={{ marginTop: '20px' }} onClick={handleCancel}>CANCEL</button>
             </div>
           )}
 
@@ -195,7 +195,12 @@ function App() {
             </>
           )}
 
-          {error && <p className="error-text">{error}</p>}
+          {error && (
+            <div className="error-container" style={{ marginTop: '30px' }}>
+              <p className="error-text" style={{ color: '#ef4444', marginBottom: '15px' }}>{error}</p>
+              <button className="btn-cancel" onClick={() => setError(null)}>TRY AGAIN</button>
+            </div>
+          )}
         </div>
 
         <footer className="external-footer">

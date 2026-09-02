@@ -112,11 +112,7 @@ def run_ocr(image: np.ndarray, max_dim: int = None):
 
     #  Resolution normalisation 
     h, w = image.shape[:2]
-    
-    if OCR_DEBUG:
-        #print("========== IMAGE DEBUG ==========")
-        #print(f"IMAGE SIZE = {w} x {h} (max_dim={effective_max_dim})")
-        upscale_factor = 1.0
+    upscale_factor = 1.0
 
     if h < MIN_DIM or w < MIN_DIM:
         upscale_factor = 800.0 / h if h < w else 800.0 / w

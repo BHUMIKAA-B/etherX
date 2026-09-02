@@ -382,16 +382,64 @@ async def _recover_missing_marksheet_marks(result: dict, image, texts=None, raw_
 
     
 
+# ── Validation helpers ──
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
+ALLOWED_CONTENT_TYPES = {
+    "image/jpeg", "image/png", "image/bmp", "image/tiff",
+    "image/webp", "image/jpg",
+}
+
+def _is_blank_image(image, threshold=12.0):
+    """Detect near-uniform (blank) images by checking pixel variance."""
+    try:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # Sample center region to avoid border artifacts
+        h, w = gray.shape
+        crop = gray[h // 4 : 3 * h // 4, w // 4 : 3 * w // 4]
+        return float(np.std(crop)) < threshold
+    except Exception:
+        return False
+
+
 #  Core processing (inner function, wrapped with timeout) 
 async def _process_upload(file: UploadFile) -> dict:
     t_start = time.perf_counter()
+
+    # ── 1. File-level validation ──
+    content_type = (file.content_type or "").lower()
+    if content_type and content_type not in ALLOWED_CONTENT_TYPES and not content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=422,
+            detail="Unsupported file type. Please upload a JPG, PNG, BMP, TIFF, or WebP image.",
+        )
+
     #  Read file into memory (no disk I/O) 
     contents = await file.read()
+
+    if len(contents) == 0:
+        raise HTTPException(status_code=422, detail="Empty file. Please upload a valid document image.")
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"File too large ({len(contents) // (1024*1024)}MB). Maximum allowed size is 20MB.",
+        )
+
+    # ── 2. Image decode ──
     nparr = np.frombuffer(contents, np.uint8)
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    
+
     if image is None:
-        return {"detail": "Invalid image format or unsupported file type"}
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid or corrupted file. Please upload a valid image (JPG, PNG, BMP, TIFF, or WebP).",
+        )
+
+    # ── 3. Blank image check ──
+    if _is_blank_image(image):
+        raise HTTPException(
+            status_code=422,
+            detail="The uploaded image appears to be blank. Please upload a document image with visible content.",
+        )
 
     # OCR (CPU-bound  thread) 
     ocr_start = time.perf_counter()
@@ -400,6 +448,14 @@ async def _process_upload(file: UploadFile) -> dict:
     print(
     f"OCR Time: {(time.perf_counter() - ocr_start):.2f} sec"
     )
+
+    # ── 4. Minimum text check ──
+    if len(texts) < 3:
+        raise HTTPException(
+            status_code=422,
+            detail="Unable to detect sufficient text in the image. Please upload a clearer document image.",
+        )
+
     #  Classify 
     #doc_type = classify_document(texts)
     cls_start = time.perf_counter()
@@ -421,43 +477,33 @@ async def _process_upload(file: UploadFile) -> dict:
 
     KNOWN_DOC_TYPES = {"Aadhaar", "PAN", "Driving License", "Marksheet"}
     if doc_type not in KNOWN_DOC_TYPES:
-        raise HTTPException(status_code=400, detail="Invalid document. Please upload a valid document.")
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid document. Please upload a supported document (Aadhaar, PAN, Driving License, or Marksheet).",
+        )
 
     job_id = uuid.uuid4().hex
+
+    # Pre-compute shared Aadhaar crop (avoids duplicate crop_embedded_aadhaar_card calls)
+    _aadhaar_is_new = False
+    _aadhaar_crop = None
+    if doc_type == "Aadhaar":
+        _aadhaar_is_new = _is_new_style_aadhaar(image, texts)
+        if _aadhaar_is_new:
+            _aadhaar_crop = await run_in_thread(crop_embedded_aadhaar_card, image)
 
     #  Parallel: field extraction + asset extraction 
     async def extract_fields_task():
         try:
-            #if doc_type == "Aadhaar":
-             #   return await run_in_thread(aadhaar.extract_aadhaar_fields, texts)
-            """
-            if doc_type == "Aadhaar":
-
-             field_start = time.perf_counter()
-
-             result = await run_in_thread(
-              aadhaar.extract_aadhaar_fields,
-              texts
-             )
-
-             print(
-             f"Aadhaar Field Extraction Time = {time.perf_counter() - field_start:.2f} sec"
-             )
-
-             return result
-            """
             if doc_type == "Aadhaar":
 
              field_start = time.perf_counter()
 
              field_texts = texts
-             is_new_style = _is_new_style_aadhaar(image,texts)
-             if is_new_style:
-                 embedded_crop = await run_in_thread(crop_embedded_aadhaar_card, image)
-                 if embedded_crop is not None:
-                     crop_texts, _ = await run_in_thread(run_ocr, embedded_crop)
-                     if crop_texts:
-                         field_texts = crop_texts
+             if _aadhaar_is_new and _aadhaar_crop is not None:
+                 crop_texts, _ = await run_in_thread(run_ocr, _aadhaar_crop)
+                 if crop_texts:
+                     field_texts = crop_texts
 
              result = await run_in_thread(
               aadhaar.extract_aadhaar_fields,
@@ -493,28 +539,11 @@ async def _process_upload(file: UploadFile) -> dict:
         face_out = os.path.join(OUTPUT_DIR, f"face_{job_id}.jpg")
         sig_out  = os.path.join(OUTPUT_DIR, f"signature_{job_id}.jpg")
 
-        """
         if doc_type == "Aadhaar":
 
          face_start = time.perf_counter()
 
-         results = await asyncio.gather(
-         run_asset(extract_aadhaar_face, image, face_out)
-         )
-
-         print(
-         f"Aadhaar Face Extraction Time = {time.perf_counter() - face_start:.2f} sec"
-         )
-        """
-        if doc_type == "Aadhaar":
-
-         face_start = time.perf_counter()
-
-         face_source_image = image
-         if _is_new_style_aadhaar(image,texts):
-             embedded_crop = await run_in_thread(crop_embedded_aadhaar_card, image)
-             if embedded_crop is not None:
-                 face_source_image = embedded_crop
+         face_source_image = _aadhaar_crop if (_aadhaar_is_new and _aadhaar_crop is not None) else image
 
          results = await asyncio.gather(
          run_asset(extract_aadhaar_face, face_source_image, face_out)
@@ -543,10 +572,6 @@ async def _process_upload(file: UploadFile) -> dict:
         
         return None, None
 
-    #data, (face_path, signature_path) = await asyncio.gather(
-        extract_fields_task(),
-        extract_assets_task(),
-    #)
     extract_start = time.perf_counter()
 
     data, (face_path, signature_path) = await asyncio.gather(
@@ -601,8 +626,8 @@ async def upload_document(file: UploadFile = File(...)):
 
     except asyncio.TimeoutError:
         _metrics["requests_error"] += 1
-        msg = f"Request timed out after {REQUEST_TIMEOUT}s"
-        logger.error(msg)
+        msg = f"Processing timed out. Please try again with a smaller or clearer image."
+        logger.error(f"Request timed out after {REQUEST_TIMEOUT}s")
         return JSONResponse(
             {"detail": msg},
             status_code=408,
@@ -613,20 +638,7 @@ async def upload_document(file: UploadFile = File(...)):
     except Exception as exc:
         _metrics["requests_error"] += 1
         logger.exception(f"Unhandled error during /upload: {exc}")
-        return JSONResponse({"detail": "Internal server error"}, status_code=500)
-    """
-    except asyncio.TimeoutError:
-        _metrics["requests_error"] += 1
-        msg = f"Request timed out after {REQUEST_TIMEOUT}s"
-        logger.error(msg)
         return JSONResponse(
-            {"detail": msg},
-            status_code=408,
+            {"detail": "An unexpected error occurred while processing your document. Please try again."},
+            status_code=500,
         )
-    except Exception as exc:
-        _metrics["requests_error"] += 1
-        logger.exception(f"Unhandled error during /upload: {exc}")
-        return JSONResponse({"detail": "Internal server error"}, status_code=500)
-    """
-
-    

@@ -299,6 +299,25 @@ body::before {
 
 }
 
+.btn-cancel {
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid #94a3b8;
+  padding: 12px 40px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 50px;
+  cursor: pointer;
+  letter-spacing: 1.5px;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: rgba(148, 163, 184, 0.1);
+  color: #fff;
+  border-color: #fff;
+}
+
 
 
 .external-footer {
