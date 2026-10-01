@@ -34,8 +34,7 @@ def get_ocr() -> PaddleOCR:
             device="cpu",
             enable_mkldnn=False,
             cpu_threads=1,
-            det_limit_side_len=640,
-            show_log=False
+            det_limit_side_len=640
         )
     return _ocr_instance
 
