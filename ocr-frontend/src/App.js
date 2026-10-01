@@ -74,8 +74,10 @@ function App() {
       setResult(data);
     
     } catch (err) {
-    if (err.name === 'AbortError') {
-      setError('Scan cancelled.');
+      if (err.name === 'AbortError') {
+        setError('Scan cancelled.');
+      } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('502') || err.message.includes('503')) {
+        setError('Backend server is waking up or temporarily unavailable. Please wait 10 seconds and click INITIATE SCAN again.');
       } else if (err.message === 'Invalid document. Please upload a valid document.') {
         setError(err.message);
       } else {

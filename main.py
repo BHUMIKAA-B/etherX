@@ -87,7 +87,7 @@ async def startup_event():
     """Warm up OCR engine. Called by FastAPI handler and directly by tests."""
     from ocr_engine import get_ocr
     loop = asyncio.get_event_loop()
-    loop.set_default_executor(ThreadPoolExecutor(max_workers=4))
+    loop.set_default_executor(ThreadPoolExecutor(max_workers=2))
     await loop.run_in_executor(None, get_ocr)
     logger.info("OCR Engine warmed up and ready.")
 
@@ -220,7 +220,7 @@ def _enhance_marks_table_crop(image):
     h, w = image.shape[:2]
     crop = image[int(0.30 * h):int(0.72 * h), 0:w]
     ch, cw = crop.shape[:2]
-    scale = min(HIGH_RES_MAX_DIM / max(ch, cw), 3.0)
+    scale = min(HIGH_RES_MAX_DIM / max(ch, cw), 1.5)
     big = cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
     gray = cv2.cvtColor(big, cv2.COLOR_BGR2GRAY)
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
@@ -599,6 +599,8 @@ async def _process_upload(file: UploadFile) -> dict:
                     pass
                 face_path = None
     print(f"TOTAL TIME = {time.perf_counter() - t_start:.2f} sec")
+    import gc
+    gc.collect()
     return {
         "document_type": doc_type,
         "extracted_fields": data,

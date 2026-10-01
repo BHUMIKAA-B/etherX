@@ -27,8 +27,8 @@ def get_ocr() -> PaddleOCR:
             use_angle_cls=False,
             lang="en",
             device="cpu",
-            enable_mkldnn=True,
-            cpu_threads=2,
+            enable_mkldnn=False,
+            cpu_threads=1,
             det_limit_side_len=640,
             show_log=False
         )
@@ -37,7 +37,7 @@ def get_ocr() -> PaddleOCR:
 #  In-process OCR result cache (keyed on fast structural hash) 
 _ocr_cache: dict = {}
 _cache_hits: int = 0
-_CACHE_MAX = 500
+_CACHE_MAX = 50
 
 
 def _rotate_np(image, angle):
