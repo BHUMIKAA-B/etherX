@@ -4,7 +4,7 @@ import logo from './assets/logo.png';
 
 const API_BASE = process.env.REACT_APP_API_URL || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? "http://127.0.0.1:8000"
-  : "https://etherxvision-backend-production.up.railway.app");
+  : "https://etherxvision-backend.onrender.com");
 
 // Updated steps to match your Internship Project flow
 const STEPS = ["UPLOAD", "PREPROCESS", "ANALYSIS", "EXTRACTION"];
