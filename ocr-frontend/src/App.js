@@ -4,7 +4,7 @@ import logo from './assets/logo.png';
 
 const API_BASE = process.env.REACT_APP_API_URL || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? "http://127.0.0.1:8000"
-  : "https://etherxvision-backend.onrender.com");
+  : "https://620f-125-21-204-66.ngrok-free.app");
 
 // Updated steps to match your Internship Project flow
 const STEPS = ["UPLOAD", "PREPROCESS", "ANALYSIS", "EXTRACTION"];
@@ -40,6 +40,9 @@ function App() {
 
       const response = await fetch(`${API_BASE}/upload`, {
         method: 'POST',
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
         body: formData,
         signal: ctrl.signal,
       });
