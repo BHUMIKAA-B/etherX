@@ -14,9 +14,9 @@ import cv2
 import numpy as np
 
 # Configurable via environment variables 
-MAX_DIM = int(os.getenv("OCR_MAX_DIM", "800"))   # lower = faster, less accurate on tiny text
-MIN_DIM = int(os.getenv("OCR_MIN_DIM", "600"))    # below this we upscale
-HIGH_RES_MAX_DIM = int(os.getenv("OCR_HIGH_RES_MAX_DIM", "1000"))  # used only on retry pass
+MAX_DIM = int(os.getenv("OCR_MAX_DIM", "640"))   # lower = faster, less accurate on tiny text
+MIN_DIM = int(os.getenv("OCR_MIN_DIM", "480"))    # below this we upscale
+HIGH_RES_MAX_DIM = int(os.getenv("OCR_HIGH_RES_MAX_DIM", "800"))  # used only on retry pass
 OCR_DEBUG = os.getenv("OCR_DEBUG", "0") == "1"    # gate verbose per-box logging
 
 #  Singleton OCR instance 
@@ -34,7 +34,7 @@ def get_ocr() -> PaddleOCR:
             device="cpu",
             enable_mkldnn=False,
             cpu_threads=1,
-            det_limit_side_len=640
+            det_limit_side_len=480
         )
     return _ocr_instance
 
@@ -67,7 +67,7 @@ def correct_orientation(image):
 
     for angle in (0, 90, 180, 270):
         rotated = _rotate_np(small, angle)
-        result = ocr.ocr(rotated, cls=False)
+        result = ocr.ocr(rotated)
         lines = result[0] if result and result[0] else []
         score = len(lines)
         if angle == 0:
@@ -132,7 +132,7 @@ def run_ocr(image: np.ndarray, max_dim: int = None):
 
     # Run OCR 
     ocr = get_ocr()
-    result = ocr.ocr(image, cls=False)
+    result = ocr.ocr(image)
    
     if not result or result[0] is None:
         return [], []

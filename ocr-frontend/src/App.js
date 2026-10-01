@@ -35,14 +35,14 @@ function App() {
     setController(ctrl);
 
     try {
-      const timeoutId = setTimeout(() => ctrl.abort(), 300000); // 300s timeout for first-time model load
+      const timeoutId = setTimeout(() => ctrl.abort(), 30000); // 30s max timeout for fast UX
 
+      const uploadUrl = API_BASE.includes('ngrok')
+        ? `${API_BASE}/upload?ngrok-skip-browser-warning=true`
+        : `${API_BASE}/upload`;
 
-      const response = await fetch(`${API_BASE}/upload`, {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
         body: formData,
         signal: ctrl.signal,
       });
@@ -78,7 +78,7 @@ function App() {
     
     } catch (err) {
       if (err.name === 'AbortError') {
-        setError('Scan cancelled.');
+        setError(cancelledRef.current ? 'Scan cancelled.' : 'Scanning timed out (30s). Please try uploading again.');
       } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('502') || err.message.includes('503')) {
         setError('Backend server is waking up or temporarily unavailable. Please wait 10 seconds and click INITIATE SCAN again.');
       } else if (err.message === 'Invalid document. Please upload a valid document.') {
