@@ -13,6 +13,12 @@ services:
         value: 800
       - key: WORKERS
         value: 1
+      - key: FLAGS_initial_cpu_memory_in_mb
+        value: "32"
+      - key: FLAGS_allocator_strategy
+        value: "naive_best_fit"
+      - key: OMP_NUM_THREADS
+        value: "1"
 
   - type: web
     name: etherxvision-frontend

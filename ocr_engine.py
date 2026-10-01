@@ -2,6 +2,11 @@ import os
 import hashlib
 import logging
 
+os.environ["FLAGS_initial_cpu_memory_in_mb"] = "32"
+os.environ["FLAGS_allocator_strategy"] = "naive_best_fit"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+
 logging.getLogger("ppocr").setLevel(logging.ERROR)
 
 from paddleocr import PaddleOCR
