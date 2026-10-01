@@ -332,15 +332,8 @@ async def _recover_missing_marksheet_marks(result: dict, image, texts=None, raw_
         _recover_from(subjects, retry_subjects)
 
         still_missing = [s for s in subjects if s.get("marks") is None]
-        if still_missing:
-            crop_start = time.perf_counter()
-            enhanced_crop = _enhance_marks_table_crop(image)
-            texts3, raw3 = await run_in_thread(run_ocr, enhanced_crop, HIGH_RES_MAX_DIM)
-            crop_result = await run_in_thread(marksheet.extract, texts3, enhanced_crop, raw3)
-            crop_subjects = crop_result.get("subjects") or []
-            print(f"Enhanced-crop retry OCR Time: {(time.perf_counter() - crop_start):.2f} sec "
-                  f"(still missing: {[s['subject'] for s in still_missing]}, crop found: {crop_subjects})")
-            _recover_from(subjects, crop_subjects)
+        # Skip 3rd crop pass to keep total processing time under Render's 30s timeout
+        pass
 
         still_missing = [s for s in subjects if s.get("marks") is None]
         if len(still_missing) < len(missing_marks) and result.get("total_marks") is None:

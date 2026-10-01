@@ -11,7 +11,7 @@ import numpy as np
 # Configurable via environment variables 
 MAX_DIM = int(os.getenv("OCR_MAX_DIM", "800"))   # lower = faster, less accurate on tiny text
 MIN_DIM = int(os.getenv("OCR_MIN_DIM", "600"))    # below this we upscale
-HIGH_RES_MAX_DIM = int(os.getenv("OCR_HIGH_RES_MAX_DIM", "1400"))  # used only on retry pass
+HIGH_RES_MAX_DIM = int(os.getenv("OCR_HIGH_RES_MAX_DIM", "1000"))  # used only on retry pass
 OCR_DEBUG = os.getenv("OCR_DEBUG", "0") == "1"    # gate verbose per-box logging
 
 #  Singleton OCR instance 
@@ -55,7 +55,7 @@ def correct_orientation(image):
         return image
 
     h, w = image.shape[:2]
-    scale = 400 / max(h, w)
+    scale = 250 / max(h, w)
     small = cv2.resize(image, None, fx=scale, fy=scale) if scale < 1.0 else image
 
     ocr = get_ocr()
